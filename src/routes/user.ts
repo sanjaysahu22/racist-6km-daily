@@ -8,21 +8,33 @@ const userRouter  = new Hono<{
         JWT_SECRET:string
     }
 }>
+// check route
+userRouter.post('/' , (c)=>{
+  console.log("chal gaya");
+  return new Response('good morning');  
+})
 //login
-    userRouter.post('/signin', (c) => {
+    userRouter.post('/signup',async (c) => {
+      console.log("prisma")
         const prisma = new PrismaClient ({
             datasourceUrl:c.env.DATABASE_URL
-        }).$extends(withAccelerate())
-        const body = c.req.json;
+            }).$extends(withAccelerate())
+         const body   = await  c.req.json();
+          const nothashedpassword =  await body.password;
+          console.log(nothashedpassword);
         
+           console.log('done');
+
+          
         return c.text('Hello Hono!')
+
   })
   //register
-  userRouter.post('/signup', (c) => {
+  userRouter.post('/signin', (c) => {
     return c.text('Hello Hono!')
   })
   userRouter.post('/blog', (c) => {
     return c.text('Hello Hono!')
   })
- 
+ console.log("khatqm  ")
   export default userRouter
