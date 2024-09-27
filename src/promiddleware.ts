@@ -1,36 +1,19 @@
-import { verify } from "hono/jwt";
+// implement refresh token and access token in jwt
+// create blog 
+import { Hono, Next } from "hono";
+import { bearerAuth } from "hono/bearer-auth";
+import { Context } from "hono";
+
+ export const Authmiddleware  =(c:Context , next:Next)=>{
+    const token = c.req.header('Authorization');
+    console.log(token);
+    if(!token){
+        return c.json({
+            error:"lode login kar"
+        })
+    }
+    else{
+        next();
+    }
+}
     
-    export  const middleware = (app:any)=>{
-    app.use('/api/v1/blog/*' ,(c :any,next:any)=>{
-
-
-        const token = c.req.header('Autorization').split(" ")[1];
-            
-        if(!token){
-
-            return c.json({
-            error:'access denied , authorization failed'
-            })
-            
-        }
-
-        else{
-
-               const tokenresponse = verify(token, c.env.JWT_SECRET);
-                
-                if(!tokenresponse){
-            
-                    return  c.json({
-                        error :"backchodi mat kar lode"
-                    })
-            
-                }
-
-                else{
-                 next();
-                }
-            
-        }
-
-    })
-   } 
