@@ -60,7 +60,7 @@ userRouter.post("/signup", async (c) => {
       const payload2 = {
         sub: usercreated.id,
         role: "user",
-        exp: Math.floor(Date.now() / 100) + 60,
+        exp: Math.floor(Date.now() / 100) +( 60*60),
       };
 
       const refresh_token = await sign(payload, c.env.JWT_SECRET); // creating refresh token
