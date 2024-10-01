@@ -1,4 +1,4 @@
-import {  Next } from "hono";
+import { Next } from "hono";
 import { Context } from "hono";
 import { decode, sign } from "hono/jwt";
 

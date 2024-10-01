@@ -15,11 +15,10 @@ const blogRouter = new Hono<{
 
 blogRouter.post("/",  async (c) => {
     
-
+return c.text("hello bacho  ")
    
 });
-blogRouter.put("/", (c) => {
-  return c.text("Hello Hono!");
+blogRouter.put("/create_blog", async (c) => {
 });
 blogRouter.get("/:id", (c) => {
   return c.text("Hello Hono!");

@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client/edge";
-import { Hono } from "hono";
+import { Context, Hono } from "hono";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { hashSync, compareSync } from "bcrypt-edge";
 import { decode, sign, verify } from "hono/jwt";
@@ -17,23 +17,23 @@ userRouter.post("/", (c) => {
   return new Response("good morning");
 });
 //register
-userRouter.post("/signup", async (c) => {
-  console.log("prisma");
+userRouter.post("/signup", async (c: Context) => {
 
-  const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-  }).$extends(withAccelerate());
-
+  const prisma = c.get("prisma");
   try {
     const body = await c.req.json();
     const hashedpassword = hashSync(body.password, 10);
 
     // checking if user exist
-    const findexist = await prisma.user.findUnique({
+    const d1 = Date.now();
+    console.log(d1)
+    const findexist = await prisma.user.findFirst({
       where: {
         username: body.username,
       },
     });
+    const d2 = Date.now();
+    console.log(d2 - d1);
 
     if (findexist) {
       console.log("user already exist");
@@ -60,7 +60,7 @@ userRouter.post("/signup", async (c) => {
       const payload2 = {
         sub: usercreated.id,
         role: "user",
-        exp: Math.floor(Date.now() / 100) +( 60*60),
+        exp: Math.floor(Date.now() / 100) + 60 * 60,
       };
 
       const refresh_token = await sign(payload, c.env.JWT_SECRET); // creating refresh token
@@ -87,14 +87,10 @@ userRouter.post("/signup", async (c) => {
 });
 
 //login route
-userRouter.post("/signin", async (c) => {
+userRouter.post("/signin", async (c: Context) => {
   try {
-    const prisma = new PrismaClient({
-      datasourceUrl: c.env.DATABASE_URL,
-    }).$extends(withAccelerate());
-
     const body = await c.req.json();
-
+    const prisma = c.get("prisma");
     // finding user to get logged in
     const finduser = await prisma.user.findUnique({
       where: {
@@ -160,8 +156,6 @@ userRouter.post("/blog", async (c) => {
   return c.text("Hello Hono!");
 });
 
-// update password
-userRouter.post('/update_password' , )
 
 console.log("khatam  ");
 export default userRouter;

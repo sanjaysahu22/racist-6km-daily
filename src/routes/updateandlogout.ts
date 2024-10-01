@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Context, Hono } from "hono";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { hashSync, compareSync } from "bcrypt-edge";
@@ -11,11 +11,8 @@ const updateRouter = new Hono<{
   };
 }>();
 
-updateRouter.post("/updatepassword", async (c) => {
-  const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-  }).$extends(withAccelerate());
-
+updateRouter.post("/updatepassword", async (c:Context) => {
+  const prisma = c.get('prisma')
   const token = c.req.header("Authorization");
   console.log("yaha error hai");
 
@@ -79,11 +76,9 @@ updateRouter.post("/updatepassword", async (c) => {
 });
 
 // logout route
-updateRouter.post("/logout", async (c) => {
-  const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-  }).$extends(withAccelerate());
-
+updateRouter.post("/logout", async (c:Context) => {
+  
+  const prisma  = c.get('prisma');
   const token = c.req.header("Authorization");
   console.log("yaha error hai");
 
