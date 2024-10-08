@@ -1,4 +1,4 @@
-import { Hono, Next } from 'hono'
+import { Hono } from 'hono'
 import userRouter from './routes/user'
 import blogRouter from './routes/blog'
 import updateRouter from './routes/updateandlogout'

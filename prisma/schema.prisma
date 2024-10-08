@@ -12,60 +12,71 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model User {
-  id             String      @default(uuid()) @id 
-  username       String      @unique
-  email          String      @unique
-  password       String 
-  refresh_Token  String?     @unique 
-  blogs          Blog[] 
-  followers      Follows[]   @relation("followers")
-  following      Follows[]   @relation("following")
-  likes          Likes[]     @relation("likedBy")      
-  comments       Comments[]  @relation("commentedBy")
-  } 
-
-model  Blog {
-id          String      @default(uuid())  @id
-user        User        @relation(fields: [userid], references: [id])
-userid      String
-created_at  DateTime    @default(now())     
-likes       Likes[]     @relation("likedOn")
-comment     Comments[]  @relation("commentedOn")  
-BlogData    String?             
+  id            String     @id @default(uuid())
+  username      String     @unique
+  email         String     @unique
+  password      String
+  refresh_Token String?    @unique
+  blogs         Blog[]
+  followers     Follows[]  @relation("followers")
+  following     Follows[]  @relation("following")
+  likes         Likes[]    @relation("likedBy")
+  comments      Comments[] @relation("commentedBy")
+  categories    Category[] @relation("usercategory")
 }
 
-model Follows{
-following    User      @relation("following" , fields: [followingId] , references: [id])
-followingId  String
-follower     User      @relation("followers" , fields: [followerId] , references: [id])
-followerId   String
-time         DateTime  @default(now())
-@@id([followerId,followingId])
+model Blog {
+  id         String     @id @default(uuid())
+  user       User       @relation(fields: [userid], references: [id])
+  userid     String
+  created_at DateTime   @default(now())
+  likes      Likes[]    @relation("likedOn")
+  comment    Comments[] @relation("commentedOn")
+  BlogData   String?
+  categories Category[] @relation("blogcategory")
 }
 
-model Likes{
-likedBy   User      @relation("likedBy" , fields: [likeById] , references: [id])
-likeById  String 
-likeOnId  String 
-likedOn   Blog      @relation("likedOn" , fields: [likeOnId] , references: [id])
-time      DateTime  @default(now())
-@@id([likeById , likeOnId])
+model Follows {
+  following   User     @relation("following", fields: [followingId], references: [id])
+  followingId String
+  follower    User     @relation("followers", fields: [followerId], references: [id])
+  followerId  String
+  time        DateTime @default(now())
+
+  @@id([followerId, followingId])
 }
 
-model Comments{
-id                 String      @default(uuid())  @id
-commentedBy        User        @relation("commentedBy" , fields: [commentById] , references: [id])
-commentById        String 
-comments           comment[]  
-commentOn          Blog        @relation("commentedOn" , fields: [commentOnId] , references: [id])
-commentOnId        String
+model Likes {
+  likedBy  User     @relation("likedBy", fields: [likeById], references: [id])
+  likeById String
+  likeOnId String
+  likedOn  Blog     @relation("likedOn", fields: [likeOnId], references: [id])
+  time     DateTime @default(now())
+
+  @@id([likeById, likeOnId])
 }
-model comment{
-id          String    @default(uuid()) @id
-commentref  Comments  @relation(fields: [commentsId] ,references: [id])
-commentsId  String
-comment     String
-time        DateTime  @default(now())
+
+model Comments {
+  id          String    @id @default(uuid())
+  commentedBy User      @relation("commentedBy", fields: [commentById], references: [id])
+  commentById String
+  comments    comment[]
+  commentOn   Blog      @relation("commentedOn", fields: [commentOnId], references: [id])
+  commentOnId String
+}
+
+model comment {
+  id         String   @id @default(uuid())
+  commentref Comments @relation(fields: [commentsId], references: [id])
+  commentsId String
+  comment    String
+  time       DateTime @default(now())
+}
+
+model Category {
+  id        String  @id @default(uuid())
+  Category  String
+  users     User[]  @relation("usercategory")
+  blogs     Blog[]  @relation("blogcategory")
 }

@@ -19,8 +19,10 @@ export const Authmiddleware = async (c: Context, next: Next) => {
             role: token_details.payload.role,
             exp: Math.floor(Date.now() / 100) +( 60 * 60),
           };
+          const userid = token_details.payload.sub;
+          c.set("userId" , userid);
           const new_access_token = await sign(new_payload, c.env.JWT_SECRET);
-    
+          
           c.header("Authorization", `Bearer ${new_access_token}`);
           await next() 
           return c.json({ message: "Token refreshed", accessToken: new_access_token }, 200);
