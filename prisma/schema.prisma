@@ -63,7 +63,7 @@ model Comments {
   commentById String
   comments    comment[]
   commentOn   Blog      @relation("commentedOn", fields: [commentOnId], references: [id])
-  commentOnId String
+  commentOnId String      
 }
 
 model comment {
@@ -79,4 +79,5 @@ model Category {
   Category  String
   users     User[]  @relation("usercategory")
   blogs     Blog[]  @relation("blogcategory")
+  
 }
