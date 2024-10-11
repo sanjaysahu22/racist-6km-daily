@@ -1,5 +1,5 @@
 import { Context, Hono } from "hono";
-import { comment, PrismaClient } from "@prisma/client/edge";
+import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 
 const blogRouter = new Hono<{
@@ -16,7 +16,6 @@ blogRouter.post("/create_blog", async (c: Context) => {
   const body = await c.req.json();
   const userId = c.get("userId");
   const prisma = c.get("prisma");
-
   try {
     const blog_created = await prisma.blog.create({
       data: {
@@ -24,16 +23,9 @@ blogRouter.post("/create_blog", async (c: Context) => {
         userid: userId,
       },
     });
-    if (!blog_created.BlogData) {
-      return c.json({ error: "blog data can not be null" }, 400);
-    } else {
-      return c.json({ message: "blog created successfully" }, 200, {
-        blog: blog_created.id,
-      });
-    }
+    return c.json({ message:"blog created successfully" , blog_details:blog_created}, 200);
   } catch (error) {
-    console.log(error);
-    return c.json({ error }, 400);
+    return c.json({ error : error}, 400);
   }
 });
 
@@ -44,7 +36,7 @@ blogRouter.patch("/update_blog", async (c: Context) => {
   const prisma = c.get("prisma");
 
   try {
-    const update_blog = await prisma.blog.update({
+      const update_blog = await prisma.blog.update({
       where: {
         userid: userId,
         id: body.blogId,
@@ -53,9 +45,8 @@ blogRouter.patch("/update_blog", async (c: Context) => {
         BlogData: body.blogData,
       },
     });
-    return c.json({ message: "blog updated successfully" }, 200);
+    return c.json({ message: "blog updated successfully"  , blog_details:update_blog}, 200);
   } catch (error) {
-    console.log(error);
     return c.json({ error: error }, 400);
   }
 });
@@ -82,88 +73,107 @@ blogRouter.get("/:id", async (c: Context) => {
   }
 });
 
-// mutliple user
-blogRouter.get("/bulk/tag", async (c: Context) => {
-  const id = c.req.param("id");
-  const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-  }).$extends(withAccelerate());
-  return c.text("Hello Hono!");
-});
 // like
 blogRouter.get("/like/:id", async (c: Context) => {
-  const id = c.req.param("id");
-  const prisma = c.get("prisma");
-  const userId = c.get("userId");
+  const  id = c.req.param('id');
+  const prisma = c.get('prisma');
+  const userId:string = c.get('userId');
   try {
-    const like_result = await prisma.likes.create({
-      data: {
-        likeById: userId, // the user which  liked the blog
-        likeOnId: id, // blog id which liked by the user
-      },
-    });
-    if (!like_result) {
-      return c.json({ error: "couldnt  like blog post" }, 400);
-    } else {
-      return c.json({ message: "blog liked successfully" }, 200, {
-        likedOn: like_result.likeOnId,
+   
+    const check_result = await prisma.likes.findFirst({
+      where:{
+          likeById:userId ,
+          likeOnId:id
+      }
+    })
+    if(!check_result){
+      const like_result = await prisma.likes.create({
+        data: {
+          likeById: userId, // the user which  liked the blog
+          likeOnId: id, // blog id which liked by the user
+        },
       });
+      return c.json({ message: "blog liked successfully"  , result:like_result}, 200,  );
     }
+   else{
+    return c.json({message:"user already likes this post"} , 200)
+   }
+   
   } catch (error) {
     return c.json({ error: error }, 400);
   }
 });
-// comment
-blogRouter.get("/comment/:id", async (c: Context) => {
-  const id = c.req.param("id");
+// comment to check
+blogRouter.post("/comment", async (c: Context) => {
   const body = await c.req.json();
-  const userId = c.get("userId");
-  const prisma = c.get("primsa");
+  const userId = c.get('userId');
+  const prisma =c.get('prisma');
   try {
     const comment_user = await prisma.comments.create({
       data: {
         commentById: userId,
-        commentOnId: id,
-        comments: {
-          create: {
-            comment: body.comment,
-          },
-        },
-      },
+        commentOnId: body.id,
+      }
     });
-    if (!comment_user) {
-      return c.json({ error: "can not comment successfully" }, 400);
-    } else {
-      return c.json({ message: "commented successfully" }, 200, {
-        comment: comment_user.id,
-      });
-    }
+    console.log("l121")
+    const commentupdate = await prisma.comment.create({
+      data:{
+        commentsId:comment_user.id ,
+        comment:body.comment
+      }
+    })
+    console.log("line124")
+    return c.json({ message: "commented successfully"  , result:{commentonuser:comment_user.commentOnId ,comment:commentupdate.comment}}, 200, );
   } catch (error) {
+    console.log(error)
     return c.json({ error: error }, 400);
-  }
-});
-//
-blogRouter.get("/:category", async (c) => {
-  const category = c.req.param("category");
-  const body = await c.req.json();
-  const blogId = body.blogId;
-  const prisma = new PrismaClient({
-    datasourceUrl: c.env.DATABASE_URL,
-  }).$extends(withAccelerate());
-  const category_result = await prisma.blog.findFirst({
-    where: {
-      id: blogId,
-    },
-  });
-  if (category_result) {
-    return c.json({ error: "category already added" }, 200);
-  }
+  }   
 });
 
+// to add category to the blog 
+
+  blogRouter.post("/:category", async (c) => {
+    const prisma = new PrismaClient({
+      datasourceUrl: c.env.DATABASE_URL,
+    }).$extends(withAccelerate());
+  
+    const body = await c.req.json();
+    const categoryName= c.req.param("category");
+  
+    try {
+      // Check if the category exists, if not, create it
+      const category = await prisma.category.upsert({
+        where: { Category: categoryName },
+        update: {}, // No update, just fetch if exists
+        create: { Category: categoryName }, // Create new category if not found
+      });
+      console.log("l150")
+      // Connect the category to the blog
+      const addCategory = await prisma.blog.update({
+        where: { id: body.blogId },
+        data: {
+          categories: {
+            connect: { id: category.id }, // Connect the existing or newly created category
+          },
+        },
+      });
+  
+      return c.json({ message: "Category added successfully", result: addCategory }, 200);
+    } catch (error) {
+      return c.json({ error: error }, 400);
+    }
+  });
+  
+  
+
 // find blog that user like
- blogRouter.get('/get_category_blog' , async (c:Context)=>{
+ blogRouter.get('/del' , async (c:Context)=>{
   const user = c.get('userId');
   const prisma = c.get('prisma');
-   
+   const delte = await prisma.blog.deleteMany({
+    where:{
+      userId:'7f145694-0601-474c-8ab6-66c768210326'
+    }
+   })
  })
 export default blogRouter;

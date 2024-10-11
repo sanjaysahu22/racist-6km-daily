@@ -76,7 +76,7 @@ model comment {
 
 model Category {
   id        String  @id @default(uuid())
-  Category  String
+  Category  String   @unique
   users     User[]  @relation("usercategory")
   blogs     Blog[]  @relation("blogcategory")
   

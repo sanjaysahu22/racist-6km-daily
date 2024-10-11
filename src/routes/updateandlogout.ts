@@ -90,7 +90,7 @@ updateRouter.post("/logout", async (c:Context) => {
 
       if (!(typeof payload.sub == "string")) {
         return c.json("this error is not possible");
-      } else {
+      } else { 
         const delete_user = await prisma.user.update({
           where: {
             id: payload.sub,

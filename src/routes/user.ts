@@ -78,11 +78,11 @@ userRouter.post("/signup", async (c: Context) => {
 
       c.header("Authorization", `Bearer ${access_token}`); // putting access token in header
 
-      return c.json({ message: "Login successful!" }, 200);
+      return c.json({ message: "Login successful!"  , user:usercreated}, 200);
     }
   } catch (error) {
     console.log(error);
-    return c.json({ message: "internal server error" }, 500);
+    return c.json({ message: "internal server error"  }, 500);
   }
 });
 
