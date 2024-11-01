@@ -10,14 +10,15 @@ const actRouter = new Hono<{
   };
 }>();
 // follow route
-actRouter.post("/follow/:id", async (c: Context) => {
+actRouter.post("/follow", async (c: Context) => {
   const prisma = c.get("prisma");
-  const id = c.req.param("id");
+  const body = await c.req.json();
+
   const userId = c.get("userId");
   try {
     const check_if_follow = await prisma.follows.findFirst({
       where: {
-        followingId: id,
+        followingId: body.id,
       },
     });
     if (check_if_follow) {
@@ -27,7 +28,7 @@ actRouter.post("/follow/:id", async (c: Context) => {
         const follow_user = await prisma.follows.create({
           data: {
             followerId: userId,
-            followingId: id,
+            followingId: body.id,
           },
         });
         return c.json({ message: "following action successful" }, 200);
@@ -41,7 +42,7 @@ actRouter.post("/follow/:id", async (c: Context) => {
 });
 
 // unfollow route
-actRouter.post("/unfollow/:id", async (c: Context) => {
+actRouter.post("/unfollow/", async (c: Context) => {
   const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
   }).$extends(withAccelerate());
@@ -79,32 +80,47 @@ actRouter.post("/unfollow/:id", async (c: Context) => {
 });
 
 // like category : category choose by user
-actRouter.post("/:category", async (c: Context) => {
+actRouter.post("/addcategory", async (c: Context) => {
   const userId = c.get("userId");
-  const category = c.req.param('category');
-  const primsa = c.get('prisma');
+  const body = await c.req.json();
+  const category:string= body.category;
+  console.log(category);   
+  const prisma = c.get('prisma');
   try {
-    const category_result = await primsa.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        categories: {
-          connect: {
-            Category:category
-          },
-        },
-      },
+    const check_if_exist = await prisma.category.findexist({
+      where:{category:category}
     });
-    return c.json({ message: "category added successfully" }, 200);
+    if(check_if_exist){
+      try {
+        const category_result = await prisma.user.update({
+          where: {
+            id: userId,
+          },
+          data: {
+            categories: {
+              connect: {
+                Category:category
+              },
+            },
+          },
+        });
+        return c.json({ message: "category added successfully" , category_result} , 200);
+      } catch (error) {
+        console.log(error);
+        return c.json({ error: error }, 400);
+      } 
+    }
   } catch (error) {
     console.log(error);
-    return c.json({ error: error }, 400);
   }
+ 
+    
+
+ 
 });
 
 // suggesting user to follow c  cording to thier categories
-actRouter.get("/suggest_user", async (c: Context) => {
+actRouter.post("/suggestuser", async (c: Context) => {
   const userId = c.get("userId");
   const primsa = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,

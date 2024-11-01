@@ -9,6 +9,7 @@ const blogRouter = new Hono<{
   };
   Variables: {
     userId: string;
+    prisma:string;
   };
 }>();
 // creating blog
@@ -132,42 +133,12 @@ blogRouter.post("/comment", async (c: Context) => {
 
 // to add category to the blog 
 
-  blogRouter.post("/:category", async (c) => {
-    const prisma = new PrismaClient({
-      datasourceUrl: c.env.DATABASE_URL,
-    }).$extends(withAccelerate());
-  
-    const body = await c.req.json();
-    const categoryName= c.req.param("category");
-  
-    try {
-      // Check if the category exists, if not, create it
-      const category = await prisma.category.upsert({
-        where: { Category: categoryName },
-        update: {}, // No update, just fetch if exists
-        create: { Category: categoryName }, // Create new category if not found
-      });
-      console.log("l150")
-      // Connect the category to the blog
-      const addCategory = await prisma.blog.update({
-        where: { id: body.blogId },
-        data: {
-          categories: {
-            connect: { id: category.id }, // Connect the existing or newly created category
-          },
-        },
-      });
-  
-      return c.json({ message: "Category added successfully", result: addCategory }, 200);
-    } catch (error) {
-      return c.json({ error: error }, 400);
-    }
-  });
   
   
 
 // find blog that user like
  blogRouter.get('/del' , async (c:Context)=>{
+  console.log("line 171")
   const user = c.get('userId');
   const prisma = c.get('prisma');
    const delte = await prisma.blog.deleteMany({
@@ -176,4 +147,58 @@ blogRouter.post("/comment", async (c: Context) => {
     }
    })
  })
+// 
+
+
+
+blogRouter.post('/myblogs' , async (c:Context)=>{
+  const userId = c.get('userId');
+  const prisma = c.get('prisma')
+  try {
+    const blogs = await prisma.blog.findMany({
+      where:{
+        userid:userId
+      }
+    })
+    return c.json({message:"all blogs fetched successfully " , blogs} ,200)
+    } catch (error) {
+      console.log(error);
+    return c.json({error:error} ,400)
+
+  }
+
+   
+ })
+ 
+ blogRouter.post("/category", async (c) => {
+  const body = await c.req.json(); 
+  const categoryName:string = body.category;
+  const userId = c.get('userId');
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate());
+
+
+  try {
+    // Check if the category exists, if not, create it
+    const category = await prisma.category.upsert({
+      where: { Category: categoryName },
+      update: {}, // No update, just fetch if exists
+      create: { Category: categoryName }, // Create new category if not found
+    });
+    const addCategory = await prisma.blog.update({
+      where: { id: body.blogId },
+      data: {
+        categories: {
+          connect: { id: category.id }, // Connect the existing or newly created category
+        },
+      },
+    });
+    
+    return c.json({ message: "Category added successfully", result: addCategory }, 200);
+  } catch (error) {
+    return c.json({ error: error }, 400);
+  }
+});
+
 export default blogRouter;

@@ -23,17 +23,18 @@ userRouter.post("/signup", async (c: Context) => {
   try {
     const body = await c.req.json();
     const hashedpassword = hashSync(body.password, 10);
-
+    type user  = {
+      id:string ,
+      username : string ,
+      password: string ,
+      email: string
+    } 
     // checking if user exist
-    const d1 = Date.now();
-    console.log(d1)
-    const findexist = await prisma.user.findFirst({
+    const findexist:user = await prisma.user.findFirst({
       where: {
         username: body.username,
       },
     });
-    const d2 = Date.now();
-    console.log(d2 - d1);
 
     if (findexist) {
       console.log("user already exist");
@@ -42,7 +43,7 @@ userRouter.post("/signup", async (c: Context) => {
       });
     } else {
       // creating user
-      const usercreated = await prisma.user.create({
+      const usercreated :user= await prisma.user.create({
         data: {
           username: body.username,
           password: hashedpassword,
@@ -77,43 +78,54 @@ userRouter.post("/signup", async (c: Context) => {
       });
 
       c.header("Authorization", `Bearer ${access_token}`); // putting access token in header
-
+      console.log("sended successfully");
       return c.json({ message: "Login successful!"  , user:usercreated}, 200);
     }
   } catch (error) {
     console.log(error);
-    return c.json({ message: "internal server error"  }, 500);
+    return c.json({ message: "internal server error"  }, 400);
   }
 });
 
 //login route
 userRouter.post("/signin", async (c: Context) => {
   try {
+    console.log("line 93 signin ")
     const body = await c.req.json();
-    const prisma = c.get("prisma");
+    const prisma = new PrismaClient({
+      datasourceUrl: c.env.DATABASE_URL,
+    }).$extends(withAccelerate());
+    type user  = {
+      id:string ,
+      username : string ,
+      password: string  ,
+      email: string ,
+      refresh_token : string | null
+    } 
+   
     // finding user to get logged in
     const finduser = await prisma.user.findUnique({
       where: {
         username: body.username,
       },
     });
-    console.log("line 120");
-    // checking user if  exists
+    
     if (!finduser) {
-      return c.json({ error: "account bna bhen k lode" }, 400);
+      console.log("error 113")
+      return c.json({ message: "account bna bhen k lode" }, 401);
     } else {
       const hashpasscheck = compareSync(body.password, finduser.password); // comparing password with hashed password
-
+      console.log("error line 117")
       if (!hashpasscheck) {
         return c.json({ error: "sahi password daal bhen k lode" }, 400); // checking  password is correct is not
       } else {
-        // creating payload for refresh token
+       
         const payload = {
           sub: finduser.id,
           role: "user",
         };
 
-        // creating payload for access  token
+      
         const payload2 = {
           sub: finduser.id,
           role: "user",
@@ -124,7 +136,7 @@ userRouter.post("/signin", async (c: Context) => {
         const access_token = await sign(payload2, c.env.JWT_SECRET); //  creating access token
 
         //   putting refresh token
-        const result = await prisma.user.update({
+        const result  = await prisma.user.update({
           where: {
             username: finduser.username,
           },
@@ -133,12 +145,15 @@ userRouter.post("/signin", async (c: Context) => {
           },
         });
 
-        c.header("Authorization", `Bearer ${access_token}`); // putting refresh token in auth header
-        return c.json({ message: "login succesful" }); // logged in  message
+        c.header('Authorization',  `Bearer ${access_token}`);
+   
+        console.log("sended successfully");
+        return c.json({ message: "login succesful"  }); // logged in  message
       }
     }
   } catch (error) {
-    return c.json({ err: " internal server error" }, 500);
+    console.log(error);
+    return c.json({ error: " internal server error" }, 500);
   }
 });
 

@@ -20,7 +20,6 @@ export const Authmiddleware = async (c: Context, next: Next) => {
             exp: Math.floor(Date.now() / 1000) +(10* 60 * 60),
           };
           const new_access_token = await sign(new_payload, c.env.JWT_SECRET);
-          
           c.header("Authorization", `Bearer ${new_access_token}`);
           await next() 
           return c.json({ message: "Token refreshed"}, 200);
@@ -29,7 +28,7 @@ export const Authmiddleware = async (c: Context, next: Next) => {
         await next()
      }
       
-       
+
     } catch (error) {
         console.error("Token verification failed:", error);
         return c.json({ error: "Invalid or expired token" }, 401);
